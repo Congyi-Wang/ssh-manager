@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+data/
+certs/
+*.pem
+.gradle/
+build/
+local.properties
+*.apk
+*.aab

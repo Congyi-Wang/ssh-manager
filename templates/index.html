@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSH Manager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+    <link rel="icon" href="/static/icons/icon-192.png">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-container">
+        <div class="login-card">
+            <h1>SSH Manager</h1>
+            <div class="form-group">
+                <label for="api-key-input">API Key</label>
+                <input type="password" id="api-key-input" placeholder="Enter your API key" autocomplete="off">
+            </div>
+            <button id="btn-login" class="btn btn-primary btn-lg">Login</button>
+            <div id="login-error" class="alert alert-error hidden"></div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="hidden">
+        <nav class="tab-bar">
+            <button class="tab active" data-tab="dashboard">Dashboard</button>
+            <button class="tab" data-tab="ssh-keys">SSH Keys</button>
+            <button class="tab" data-tab="ssh-config">SSH Config</button>
+            <button class="tab" data-tab="settings">Settings</button>
+        </nav>
+
+        <!-- Dashboard Tab -->
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="section">
+                <h2>System Overview</h2>
+                <div class="gauge-grid">
+                    <div class="gauge-card">
+                        <div class="gauge" id="gauge-cpu">
+                            <svg viewBox="0 0 100 50">
+                                <path d="M10 45 A35 35 0 0 1 90 45" fill="none" stroke="#333" stroke-width="8" stroke-linecap="round"/>
+                                <path id="arc-cpu" d="M10 45 A35 35 0 0 1 90 45" fill="none" stroke="#00d4aa" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 110"/>
+                            </svg>
+                            <div class="gauge-value" id="val-cpu">--%</div>
+                        </div>
+                        <div class="gauge-label">CPU</div>
+                    </div>
+                    <div class="gauge-card">
+                        <div class="gauge" id="gauge-mem">
+                            <svg viewBox="0 0 100 50">
+                                <path d="M10 45 A35 35 0 0 1 90 45" fill="none" stroke="#333" stroke-width="8" stroke-linecap="round"/>
+                                <path id="arc-mem" d="M10 45 A35 35 0 0 1 90 45" fill="none" stroke="#4ecdc4" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 110"/>
+                            </svg>
+                            <div class="gauge-value" id="val-mem">--%</div>
+                        </div>
+                        <div class="gauge-label">Memory</div>
+                    </div>
+                    <div class="gauge-card">
+                        <div class="gauge" id="gauge-disk">
+                            <svg viewBox="0 0 100 50">
+                                <path d="M10 45 A35 35 0 0 1 90 45" fill="none" stroke="#333" stroke-width="8" stroke-linecap="round"/>
+                                <path id="arc-disk" d="M10 45 A35 35 0 0 1 90 45" fill="none" stroke="#ff6b6b" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 110"/>
+                            </svg>
+                            <div class="gauge-value" id="val-disk">--%</div>
+                        </div>
+                        <div class="gauge-label">Disk</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Uptime:</span>
+                    <span id="val-uptime" class="info-value">--</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>SSH Sessions</h2>
+                <div id="sessions-list" class="data-list">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Fail2Ban</h2>
+                <div id="fail2ban-status" class="data-list">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Firewall Rules</h2>
+                <div id="firewall-rules" class="data-list">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SSH Keys Tab -->
+        <div id="tab-ssh-keys" class="tab-content">
+            <div class="section">
+                <div class="section-header">
+                    <h2>Authorized Keys</h2>
+                    <button id="btn-add-key" class="btn btn-primary">+ Add Key</button>
+                </div>
+                <div id="keys-list" class="data-list">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SSH Config Tab -->
+        <div id="tab-ssh-config" class="tab-content">
+            <div class="section">
+                <h2>Password Authentication</h2>
+                <div class="config-row">
+                    <div>
+                        <div class="config-label">Password Auth</div>
+                        <div class="config-desc">Allow SSH login with passwords</div>
+                    </div>
+                    <div class="toggle-container">
+                        <span id="password-auth-status" class="status-badge">--</span>
+                        <button id="btn-toggle-password" class="btn btn-sm">Toggle</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="tab-settings" class="tab-content">
+            <div class="section">
+                <h2>TOTP Settings</h2>
+                <button id="btn-view-qr" class="btn btn-primary">View QR Code</button>
+                <button id="btn-regen-totp" class="btn btn-danger">Regenerate TOTP</button>
+                <div id="settings-qr" class="qr-container hidden">
+                    <img id="settings-qr-img" alt="TOTP QR Code">
+                    <div id="settings-totp-secret" class="credential-value hidden"></div>
+                </div>
+            </div>
+            <div class="section">
+                <h2>API Key</h2>
+                <div class="config-desc">Your API key is stored locally in your browser. To reset it, clear browser data and re-run setup.</div>
+                <button id="btn-logout" class="btn btn-danger">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOTP Modal -->
+    <div id="totp-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-card">
+            <h3 id="totp-modal-title">Enter TOTP Code</h3>
+            <div class="totp-input-group">
+                <input type="text" id="totp-input" maxlength="6" pattern="[0-9]*" inputmode="numeric" placeholder="000000" autocomplete="one-time-code">
+            </div>
+            <div id="totp-error" class="alert alert-error hidden"></div>
+            <div class="modal-actions">
+                <button id="totp-cancel" class="btn">Cancel</button>
+                <button id="totp-confirm" class="btn btn-primary">Verify</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Key Modal -->
+    <div id="add-key-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-card">
+            <h3>Add SSH Key</h3>
+            <div class="form-group">
+                <label for="new-key-name">Device Name</label>
+                <input type="text" id="new-key-name" placeholder="e.g. My Laptop">
+            </div>
+            <div class="form-group">
+                <label for="new-key-data">Public Key</label>
+                <textarea id="new-key-data" rows="4" placeholder="ssh-ed25519 AAAA... user@host"></textarea>
+            </div>
+            <div id="add-key-error" class="alert alert-error hidden"></div>
+            <div class="modal-actions">
+                <button id="add-key-cancel" class="btn">Cancel</button>
+                <button id="add-key-submit" class="btn btn-primary">Add Key</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/totp-modal.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

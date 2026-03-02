@@ -1,0 +1,2 @@
+rootProject.name = 'SSHManager'
+include ':app'

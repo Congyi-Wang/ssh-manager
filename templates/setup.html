@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSH Manager - Setup</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+</head>
+<body>
+    <div class="setup-container">
+        <div class="setup-card">
+            <h1>SSH Manager Setup</h1>
+            <p class="setup-desc">Initialize your SSH Manager with TOTP authentication.</p>
+            <button id="btn-init" class="btn btn-primary btn-lg">Initialize</button>
+            <div id="setup-result" class="hidden">
+                <div class="alert alert-warning">
+                    Save these credentials now. They will NOT be shown again!
+                </div>
+                <div class="credential-box">
+                    <label>API Key</label>
+                    <div class="credential-value" id="api-key-value"></div>
+                    <button class="btn btn-sm" onclick="copyText('api-key-value')">Copy</button>
+                </div>
+                <div class="credential-box">
+                    <label>TOTP Secret (manual entry)</label>
+                    <div class="credential-value" id="totp-secret-value"></div>
+                    <button class="btn btn-sm" onclick="copyText('totp-secret-value')">Copy</button>
+                </div>
+                <div class="qr-container">
+                    <label>Scan with Google Authenticator</label>
+                    <img id="qr-code" alt="TOTP QR Code">
+                </div>
+                <button class="btn btn-primary btn-lg" onclick="window.location.reload()">Continue to Login</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('btn-init').addEventListener('click', async function() {
+            this.disabled = true;
+            this.textContent = 'Initializing...';
+            try {
+                const resp = await fetch('/api/v1/setup/init', {method: 'POST'});
+                const data = await resp.json();
+                if (data.error) {
+                    alert(data.error);
+                    this.disabled = false;
+                    this.textContent = 'Initialize';
+                    return;
+                }
+                document.getElementById('api-key-value').textContent = data.api_key;
+                document.getElementById('totp-secret-value').textContent = data.totp_secret;
+                document.getElementById('qr-code').src = 'data:image/png;base64,' + data.qr_code;
+                document.getElementById('setup-result').classList.remove('hidden');
+                this.classList.add('hidden');
+            } catch (e) {
+                alert('Setup failed: ' + e.message);
+                this.disabled = false;
+                this.textContent = 'Initialize';
+            }
+        });
+        function copyText(id) {
+            const text = document.getElementById(id).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 1500);
+            });
+        }
+    </script>
+</body>
+</html>
