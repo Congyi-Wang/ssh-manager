@@ -51,25 +51,35 @@ def _parse_key_line(line):
 
 
 def _read_authorized_keys():
-    """Read and return all lines from authorized_keys."""
+    """Read and return all lines from authorized_keys via sudo."""
     path = config.AUTHORIZED_KEYS_PATH
-    if not os.path.exists(path):
+    try:
+        result = subprocess.run(
+            ['sudo', 'cat', path],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode != 0:
+            return []
+        return result.stdout.splitlines(keepends=True)
+    except Exception:
         return []
-    with open(path, 'r') as f:
-        return f.readlines()
 
 
 def _write_authorized_keys(lines):
-    """Atomically write lines to authorized_keys with file lock."""
+    """Write lines to authorized_keys via sudo."""
     path = config.AUTHORIZED_KEYS_PATH
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w') as f:
-        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-        try:
-            f.writelines(lines)
-        finally:
-            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-    os.chmod(path, 0o600)
+    content = ''.join(lines)
+    try:
+        subprocess.run(
+            ['sudo', 'tee', path],
+            input=content, capture_output=True, text=True, timeout=5, check=True
+        )
+        subprocess.run(
+            ['sudo', 'chmod', '600', path],
+            capture_output=True, timeout=5
+        )
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f'Failed to write authorized_keys: {e.stderr}')
 
 
 def list_keys():
@@ -192,7 +202,7 @@ def toggle_password_auth(enabled):
         )
         # Reload sshd
         subprocess.run(
-            ['sudo', 'systemctl', 'reload', 'sshd'],
+            ['sudo', 'systemctl', 'reload', 'ssh'],
             check=True, capture_output=True, text=True, timeout=10
         )
         return {'enabled': enabled}
